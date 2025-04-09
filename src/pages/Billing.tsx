@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, ShoppingCart, X, Pill, AlertTriangle, UserPlus } from "lucide-react";
+import { Search, Plus, ShoppingCart, X, Pill, AlertTriangle, UserPlus, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/table";
 import { toast } from "@/components/ui/use-toast";
 import Layout from '../components/layout/Layout';
-import { customers, products, getAlternativeProducts } from '../services/mockData';
+import { customers, products, bills, getAlternativeProducts } from '../services/mockData';
 import { formatDistance } from 'date-fns';
 import {
   Dialog,
@@ -51,6 +51,8 @@ import {
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import InvoiceModal from '../components/invoice/InvoiceModal';
+import { prepareInvoiceData, InvoiceData } from '../utils/invoiceUtils';
 
 const customerFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -76,6 +78,9 @@ const Billing: React.FC = () => {
   const [alternativeItem, setAlternativeItem] = useState<string | null>(null);
   const [showAlternatives, setShowAlternatives] = useState<boolean>(false);
   const [showAddCustomer, setShowAddCustomer] = useState<boolean>(false);
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
+  const [showInvoice, setShowInvoice] = useState<boolean>(false);
+  const [showHistory, setShowHistory] = useState<boolean>(false);
   
   const form = useForm<CustomerFormValues>({
     resolver: zodResolver(customerFormSchema),
@@ -161,6 +166,66 @@ const Billing: React.FC = () => {
     ));
   };
 
+  const handleGenerateInvoice = () => {
+    if (!selectedCustomer || cart.length === 0) {
+      toast({
+        title: "Missing Information",
+        description: "Please select a customer and add products to the cart before generating an invoice.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newBill = {
+      id: `B${String(bills.length + 1).padStart(3, '0')}`,
+      customerId: selectedCustomer,
+      customerName: customers.find(c => c.id === selectedCustomer)?.name || '',
+      items: cart.map(item => ({
+        id: item.id,
+        productId: item.id,
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        discount: 0,
+        tax: item.price * item.quantity * 0.10,
+        total: item.subTotal,
+      })),
+      subtotal: subtotal,
+      tax: tax,
+      discount: 0,
+      total: total,
+      date: new Date().toISOString().split('T')[0],
+      paymentMethod: 'Cash',
+      status: 'paid' as const,
+    };
+
+    const customer = customers.find(c => c.id === selectedCustomer);
+    
+    if (customer) {
+      const invoice = prepareInvoiceData(newBill, customer);
+      setInvoiceData(invoice);
+      setShowInvoice(true);
+
+      bills.push(newBill);
+    }
+  };
+
+  const handleShowBillHistory = () => {
+    setShowHistory(true);
+  };
+
+  const handleViewInvoice = (billId: string) => {
+    const bill = bills.find(b => b.id === billId);
+    const customer = customers.find(c => c.id === bill?.customerId);
+    
+    if (bill && customer) {
+      const invoice = prepareInvoiceData(bill, customer);
+      setInvoiceData(invoice);
+      setShowInvoice(true);
+      setShowHistory(false);
+    }
+  };
+
   const subtotal = cart.reduce((sum, item) => sum + item.subTotal, 0);
   const tax = subtotal * 0.10;
   const total = subtotal + tax;
@@ -170,11 +235,24 @@ const Billing: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
           <Card className="mb-6">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle className="text-lg font-medium">Product Search</CardTitle>
+                <CardDescription>
+                  Search for products to add to the current bill
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleShowBillHistory}
+                className="flex items-center gap-1.5"
+              >
+                <FileText className="h-4 w-4" />
+                View Bill History
+              </Button>
+            </CardHeader>
             <CardHeader>
-              <CardTitle className="text-lg font-medium">Product Search</CardTitle>
-              <CardDescription>
-                Search for products to add to the current bill
-              </CardDescription>
               <div className="relative mt-2">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
@@ -440,19 +518,13 @@ const Billing: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="flex flex-col gap-2">
               <Button
                 className="w-full bg-pharma-primary hover:bg-pharma-primary/90"
                 disabled={cart.length === 0 || !selectedCustomer}
-                onClick={() => {
-                  toast({
-                    title: "Bill Generated",
-                    description: "Invoice has been generated successfully.",
-                  });
-                  setCart([]);
-                }}
+                onClick={handleGenerateInvoice}
               >
-                Generate Bill
+                Generate Invoice
               </Button>
             </CardFooter>
           </Card>
@@ -585,6 +657,80 @@ const Billing: React.FC = () => {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Bill History</DialogTitle>
+            <DialogDescription>
+              View previous bills and generate invoices
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="pt-4">
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Bill #</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Customer</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead></TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bills.length > 0 ? (
+                    bills.map((bill) => (
+                      <TableRow key={bill.id}>
+                        <TableCell className="font-medium">{bill.id}</TableCell>
+                        <TableCell>{bill.date}</TableCell>
+                        <TableCell>{bill.customerName}</TableCell>
+                        <TableCell className="text-right">${bill.total.toFixed(2)}</TableCell>
+                        <TableCell className="text-center">
+                          <Badge 
+                            variant={bill.status === 'paid' ? 'default' : 
+                                  bill.status === 'pending' ? 'outline' : 'destructive'}
+                            className={bill.status === 'paid' ? 'bg-green-500' : ''}
+                          >
+                            {bill.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewInvoice(bill.id)}
+                            className="flex items-center gap-1"
+                          >
+                            <FileText className="h-4 w-4" />
+                            Invoice
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                        No bills found. Generate your first bill to see it here.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {invoiceData && (
+        <InvoiceModal 
+          isOpen={showInvoice}
+          onClose={() => setShowInvoice(false)}
+          invoiceData={invoiceData}
+        />
+      )}
     </Layout>
   );
 };
