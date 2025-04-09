@@ -68,10 +68,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
-      // More comprehensive email validation
+      // Validate email format with a more stringent regex that matches Supabase's requirements
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) {
-        throw new Error("Please enter a valid email address (e.g., name@example.com)");
+        throw new Error("Invalid email format. Please use a standard email address (e.g., name@example.com)");
+      }
+      
+      // Additional check for domain validity
+      const [, domain] = email.split('@');
+      if (!domain || !domain.includes('.') || domain.split('.').pop()?.length < 2) {
+        throw new Error("Invalid email domain. Please check your email address.");
       }
       
       const { error } = await supabase.auth.signUp({ 

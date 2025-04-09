@@ -13,19 +13,28 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Improved email validation regex that aligns with Supabase requirements
+const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email address in the format name@example.com"),
+  email: z.string()
+    .min(1, "Email is required")
+    .refine(email => emailRegex.test(email), 
+      "Invalid email format. Please use a standard email address (e.g., name@example.com)"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address in the format name@example.com")
+  email: z.string()
+    .min(1, "Email is required")
+    .refine(email => emailRegex.test(email), 
+      "Invalid email format. Please use a standard email address (e.g., name@example.com)")
     .refine(email => {
-      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-      return emailRegex.test(email);
-    }, "Please enter a valid email address (e.g., name@example.com)"),
+      const [, domain] = email.split('@');
+      return domain && domain.includes('.') && domain.split('.').pop()?.length >= 2;
+    }, "Invalid email domain. Please check your email address."),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
 }).refine((data) => data.password === data.confirmPassword, {
