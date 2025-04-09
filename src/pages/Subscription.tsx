@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import Layout from '@/components/layout/Layout';
@@ -13,13 +13,13 @@ import { Database } from '@/integrations/supabase/types';
 interface SubscriptionPlan {
   id: string;
   name: string;
-  description: string;
+  description: string | null;
   price: number;
-  interval: 'month' | 'year';
-  features: string[];
-  product_limit: string;
-  employee_limit: string;
-  available_roles: string[];
+  interval: string;
+  features: string[] | null;
+  product_limit: string | null;
+  employee_limit: string | null;
+  available_roles: string[] | null;
 }
 
 interface UserSubscription {
@@ -35,7 +35,7 @@ const fetchSubscriptionPlans = async () => {
     .select('*');
 
   if (error) throw error;
-  return data as SubscriptionPlan[];
+  return data as unknown as SubscriptionPlan[];
 };
 
 const fetchUserSubscription = async (userId: string) => {
@@ -180,11 +180,11 @@ const Subscription = () => {
                 <div className="mb-4 space-y-2">
                   <div className="flex items-center">
                     <Package className="h-4 w-4 mr-2 text-pharma-primary" />
-                    <span><strong>Products:</strong> {plan.product_limit}</span>
+                    <span><strong>Products:</strong> {plan.product_limit || 'N/A'}</span>
                   </div>
                   <div className="flex items-center">
                     <Users className="h-4 w-4 mr-2 text-pharma-primary" />
-                    <span><strong>Employees:</strong> {plan.employee_limit}</span>
+                    <span><strong>Employees:</strong> {plan.employee_limit || 'N/A'}</span>
                   </div>
                   <div className="flex items-start">
                     <Shield className="h-4 w-4 mr-2 text-pharma-primary mt-1" />
@@ -193,7 +193,7 @@ const Subscription = () => {
                       <ul className="list-disc pl-5 mt-1 text-sm">
                         {plan.available_roles?.map((role, idx) => (
                           <li key={idx}>{role}</li>
-                        ))}
+                        )) || <li>Basic roles</li>}
                       </ul>
                     </div>
                   </div>
@@ -202,12 +202,12 @@ const Subscription = () => {
                 <div className="border-t pt-4">
                   <h4 className="font-semibold mb-2">Features:</h4>
                   <ul className="space-y-2">
-                    {plan.features?.map((feature, index) => (
+                    {Array.isArray(plan.features) ? plan.features.map((feature, index) => (
                       <li key={index} className="flex items-center">
                         <Check className="h-4 w-4 mr-2 text-pharma-primary" />
                         {feature}
                       </li>
-                    ))}
+                    )) : <li>Standard features</li>}
                   </ul>
                 </div>
               </CardContent>
