@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Plus, ShoppingCart, X, Pill, AlertTriangle } from "lucide-react";
+import { Search, Plus, ShoppingCart, X, Pill, AlertTriangle, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -36,7 +36,30 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const customerFormSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  phone: z.string().min(10, "Phone number must be at least 10 digits"),
+  address: z.string().min(5, "Address must be at least 5 characters"),
+});
+
+type CustomerFormValues = z.infer<typeof customerFormSchema>;
 
 interface CartItem {
   id: string;
@@ -52,7 +75,43 @@ const Billing: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [alternativeItem, setAlternativeItem] = useState<string | null>(null);
   const [showAlternatives, setShowAlternatives] = useState<boolean>(false);
+  const [showAddCustomer, setShowAddCustomer] = useState<boolean>(false);
   
+  const form = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerFormSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      phone: "",
+      address: "",
+    },
+  });
+
+  const onAddCustomer = (data: CustomerFormValues) => {
+    const newCustomerId = `customer-${customers.length + 1}`;
+    const newCustomer = {
+      id: newCustomerId,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      lastPurchase: new Date(),
+    };
+    
+    customers.push(newCustomer);
+    
+    setSelectedCustomer(newCustomerId);
+    
+    setShowAddCustomer(false);
+    
+    toast({
+      title: "Customer Added",
+      description: `${data.name} has been added successfully.`,
+    });
+    
+    form.reset();
+  };
+
   const filteredProducts = products.filter((product) => 
     product.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -67,14 +126,12 @@ const Billing: React.FC = () => {
     }
 
     if (existingItem) {
-      // If the item is already in the cart, increase its quantity
       setCart(cart.map(item => 
         item.id === product.id 
           ? { ...item, quantity: item.quantity + 1, subTotal: (item.quantity + 1) * item.price } 
           : item
       ));
     } else {
-      // Otherwise, add it to the cart
       setCart([...cart, {
         id: product.id,
         name: product.name,
@@ -105,7 +162,7 @@ const Billing: React.FC = () => {
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.subTotal, 0);
-  const tax = subtotal * 0.10; // Assuming 10% tax
+  const tax = subtotal * 0.10;
   const total = subtotal + tax;
 
   return (
@@ -192,9 +249,9 @@ const Billing: React.FC = () => {
                 <CardDescription>
                   {cart.length} {cart.length === 1 ? 'item' : 'items'} in cart
                 </CardDescription>
-                <div className="w-full sm:w-64">
+                <div className="w-full sm:w-64 flex gap-2">
                   <Select value={selectedCustomer} onValueChange={setSelectedCustomer}>
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select customer" />
                     </SelectTrigger>
                     <SelectContent>
@@ -205,6 +262,14 @@ const Billing: React.FC = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => setShowAddCustomer(true)}
+                    title="Add new customer"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </CardHeader>
@@ -321,9 +386,18 @@ const Billing: React.FC = () => {
                   </>
                 ) : (
                   <div className="bg-muted/40 p-4 rounded-md text-center">
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground mb-2">
                       Select a customer to continue with billing
                     </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowAddCustomer(true)}
+                      className="flex items-center gap-1"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Add New Customer
+                    </Button>
                   </div>
                 )}
 
@@ -385,7 +459,6 @@ const Billing: React.FC = () => {
         </div>
       </div>
 
-      {/* AI Alternatives Dialog */}
       <Dialog open={showAlternatives} onOpenChange={setShowAlternatives}>
         <DialogContent>
           <DialogHeader>
@@ -437,6 +510,79 @@ const Billing: React.FC = () => {
               ))}
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showAddCustomer} onOpenChange={setShowAddCustomer}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Customer</DialogTitle>
+            <DialogDescription>
+              Fill in the customer details below to add them to your customer database.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onAddCustomer)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="john.doe@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Phone Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="(123) 456-7890" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 Main St, City, State, Zip" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="submit" className="bg-pharma-primary hover:bg-pharma-primary/90">
+                  Add Customer
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </Layout>
