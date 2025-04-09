@@ -9,12 +9,78 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      employees: {
+        Row: {
+          created_at: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          organization_id: string
+          role_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          organization_id: string
+          role_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          organization_id?: string
+          role_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employees_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissions: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
           first_name: string | null
           id: string
           last_name: string | null
+          organization_type: boolean | null
           updated_at: string
         }
         Insert: {
@@ -22,6 +88,7 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          organization_type?: boolean | null
           updated_at?: string
         }
         Update: {
@@ -29,37 +96,101 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          organization_type?: boolean | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      role_permissions: {
+        Row: {
+          created_at: string
+          id: string
+          permission_id: string
+          role_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          permission_id: string
+          role_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          permission_id?: string
+          role_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "role_permissions_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
         }
         Relationships: []
       }
       subscription_plans: {
         Row: {
+          available_roles: string[] | null
           created_at: string
           description: string | null
+          employee_limit: string | null
           features: Json | null
           id: string
           interval: string
           name: string
           price: number
+          product_limit: string | null
         }
         Insert: {
+          available_roles?: string[] | null
           created_at?: string
           description?: string | null
+          employee_limit?: string | null
           features?: Json | null
           id?: string
           interval: string
           name: string
           price: number
+          product_limit?: string | null
         }
         Update: {
+          available_roles?: string[] | null
           created_at?: string
           description?: string | null
+          employee_limit?: string | null
           features?: Json | null
           id?: string
           interval?: string
           name?: string
           price?: number
+          product_limit?: string | null
         }
         Relationships: []
       }

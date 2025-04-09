@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
-import { Check, Loader2 } from 'lucide-react';
+import { Check, Loader2, Users, Package, Shield } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Database } from '@/integrations/supabase/types';
@@ -17,6 +17,9 @@ interface SubscriptionPlan {
   price: number;
   interval: 'month' | 'year';
   features: string[];
+  product_limit: string;
+  employee_limit: string;
+  available_roles: string[];
 }
 
 interface UserSubscription {
@@ -173,14 +176,40 @@ const Subscription = () => {
                   <span className="text-3xl font-bold">${plan.price}</span>
                   <span className="text-muted-foreground">/{plan.interval}</span>
                 </div>
-                <ul className="space-y-2">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-center">
-                      <Check className="h-4 w-4 mr-2 text-pharma-primary" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+
+                <div className="mb-4 space-y-2">
+                  <div className="flex items-center">
+                    <Package className="h-4 w-4 mr-2 text-pharma-primary" />
+                    <span><strong>Products:</strong> {plan.product_limit}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 mr-2 text-pharma-primary" />
+                    <span><strong>Employees:</strong> {plan.employee_limit}</span>
+                  </div>
+                  <div className="flex items-start">
+                    <Shield className="h-4 w-4 mr-2 text-pharma-primary mt-1" />
+                    <div>
+                      <strong>Available Roles:</strong>
+                      <ul className="list-disc pl-5 mt-1 text-sm">
+                        {plan.available_roles?.map((role, idx) => (
+                          <li key={idx}>{role}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-2">Features:</h4>
+                  <ul className="space-y-2">
+                    {plan.features?.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <Check className="h-4 w-4 mr-2 text-pharma-primary" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </CardContent>
               <CardFooter>
                 <Button 
