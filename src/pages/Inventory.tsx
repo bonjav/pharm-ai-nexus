@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { Search, Plus, Filter, ArrowUpDown } from "lucide-react";
+import React, { useState, useRef } from 'react';
+import { Search, Plus, Filter, ArrowUpDown, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -35,12 +34,22 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/components/ui/use-toast";
 import Layout from '../components/layout/Layout';
 import { products, Product } from '../services/mockData';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetDescription, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger
+} from "@/components/ui/sheet";
+import { BulkUploader } from '../components/inventory/BulkUploader';
 
 const Inventory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Get unique categories
   const categories = ['all', ...Array.from(new Set(products.map(product => product.category)))];
@@ -83,6 +92,13 @@ const Inventory: React.FC = () => {
     }
   };
 
+  const handleDownloadTemplate = () => {
+    toast({
+      title: "Template Downloaded",
+      description: "Product import template has been downloaded.",
+    });
+  };
+
   return (
     <Layout title="Inventory Management">
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
@@ -112,6 +128,26 @@ const Inventory: React.FC = () => {
               ))}
             </SelectContent>
           </Select>
+          
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" className="flex gap-2">
+                <Upload className="h-4 w-4" />
+                Bulk Import
+              </Button>
+            </SheetTrigger>
+            <SheetContent className="w-[400px] sm:w-[540px] sm:max-w-xl">
+              <SheetHeader>
+                <SheetTitle>Import Products</SheetTitle>
+                <SheetDescription>
+                  Upload an Excel file with product data to add multiple products at once.
+                </SheetDescription>
+              </SheetHeader>
+              <div className="py-6">
+                <BulkUploader />
+              </div>
+            </SheetContent>
+          </Sheet>
           
           <Dialog>
             <DialogTrigger asChild>
