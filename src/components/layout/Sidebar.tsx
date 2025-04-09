@@ -2,13 +2,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from "@/lib/utils";
-import { Calendar, Package, FileText, BarChart3, Settings, Search, Database } from "lucide-react";
+import { Calendar, Package, FileText, BarChart3, Settings, Search, Database, Users } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const Sidebar: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <BarChart3 className="w-5 h-5" /> },
     { name: 'Inventory', path: '/inventory', icon: <Package className="w-5 h-5" /> },
+    { name: 'Customers', path: '/customers', icon: <Users className="w-5 h-5" /> },
     { name: 'Billing', path: '/billing', icon: <FileText className="w-5 h-5" /> },
     { name: 'Calendar', path: '/calendar', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Reports', path: '/reports', icon: <Database className="w-5 h-5" /> },
