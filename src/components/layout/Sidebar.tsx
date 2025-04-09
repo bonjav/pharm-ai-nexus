@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from "@/lib/utils";
@@ -22,7 +21,7 @@ const Sidebar: React.FC = () => {
         <div className="bg-pharma-primary text-white p-1.5 rounded">
           <Package className="w-6 h-6" />
         </div>
-        <h1 className="text-xl font-bold text-pharma-dark">PharmAI Nexus</h1>
+        <h1 className="text-xl font-bold text-pharma-dark">Dysla PharmaAssist</h1>
       </div>
       
       <div className="px-4 pt-6 pb-2">
