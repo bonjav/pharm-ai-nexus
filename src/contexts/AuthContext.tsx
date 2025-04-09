@@ -62,11 +62,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         variant: "destructive",
       });
       console.error("Sign in error:", error);
+      throw error;
     }
   };
 
   const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
     try {
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        throw new Error("Please enter a valid email address in the format name@example.com");
+      }
+      
       const { error } = await supabase.auth.signUp({ 
         email, 
         password,
@@ -91,6 +98,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         variant: "destructive",
       });
       console.error("Sign up error:", error);
+      throw error;
     }
   };
 
@@ -110,6 +118,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         variant: "destructive",
       });
       console.error("Sign out error:", error);
+      throw error;
     }
   };
 

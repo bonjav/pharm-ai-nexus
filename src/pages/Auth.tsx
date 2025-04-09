@@ -11,16 +11,17 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const loginSchema = z.object({
-  email: z.string().email("Please enter a valid email"),
+  email: z.string().email("Please enter a valid email address"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 const signupSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
   lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email"),
+  email: z.string().email("Please enter a valid email address in the format name@example.com"),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -31,6 +32,7 @@ const signupSchema = z.object({
 const Auth = () => {
   const { user, loading, signIn, signUp } = useAuth();
   const [activeTab, setActiveTab] = useState<"login" | "signup">("login");
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -52,12 +54,22 @@ const Auth = () => {
   });
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
-    await signIn(values.email, values.password);
+    setAuthError(null);
+    try {
+      await signIn(values.email, values.password);
+    } catch (error: any) {
+      setAuthError(error.message || "Failed to sign in");
+    }
   };
 
   const onSignupSubmit = async (values: z.infer<typeof signupSchema>) => {
-    await signUp(values.email, values.password, values.firstName, values.lastName);
-    setActiveTab("login");
+    setAuthError(null);
+    try {
+      await signUp(values.email, values.password, values.firstName, values.lastName);
+      setActiveTab("login");
+    } catch (error: any) {
+      setAuthError(error.message || "Failed to sign up");
+    }
   };
 
   if (loading) {
@@ -79,6 +91,12 @@ const Auth = () => {
             <h1 className="text-2xl font-bold text-pharma-dark">Dysla PharmaAssist</h1>
           </div>
         </div>
+
+        {authError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{authError}</AlertDescription>
+          </Alert>
+        )}
 
         <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "login" | "signup")}>
           <TabsList className="grid w-full grid-cols-2">
@@ -104,7 +122,12 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="Email" type="email" autoComplete="email" {...field} />
+                            <Input 
+                              placeholder="name@example.com" 
+                              type="email" 
+                              autoComplete="email" 
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -178,7 +201,12 @@ const Auth = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="Email" type="email" autoComplete="email" {...field} />
+                            <Input 
+                              placeholder="name@example.com" 
+                              type="email" 
+                              autoComplete="email" 
+                              {...field} 
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
