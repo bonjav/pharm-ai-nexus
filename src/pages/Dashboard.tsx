@@ -1,6 +1,18 @@
 
 import React from 'react';
-import { BarChart, LineChart, PieChart } from "recharts";
+import { 
+  BarChart, 
+  LineChart, 
+  PieChart, 
+  CartesianGrid, 
+  XAxis, 
+  YAxis, 
+  Tooltip, 
+  Legend,
+  Pie,
+  Cell,
+  Area
+} from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, DollarSign, AlertTriangle, ShoppingCart, PackageCheck, ArrowUpRight, Clock } from "lucide-react";
 import Layout from '../components/layout/Layout';
@@ -100,11 +112,11 @@ const Dashboard: React.FC = () => {
                   <stop offset="95%" stopColor="#3A86FF" stopOpacity={0.1} />
                 </linearGradient>
               </defs>
-              <cartesianGrid strokeDasharray="3 3" vertical={false} />
-              <xAxis dataKey="month" />
-              <yAxis />
-              <tooltip />
-              <area
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Area
                 type="monotone"
                 dataKey="sales"
                 stroke="#3A86FF"
@@ -121,7 +133,7 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardContent>
             <PieChart width={250} height={250}>
-              <pie
+              <Pie
                 data={categoryData}
                 cx="50%"
                 cy="50%"
@@ -131,7 +143,7 @@ const Dashboard: React.FC = () => {
                 nameKey="name"
               >
                 {categoryData.map((entry, index) => (
-                  <cell
+                  <Cell
                     key={`cell-${index}`}
                     fill={[
                       "#3A86FF",
@@ -143,9 +155,9 @@ const Dashboard: React.FC = () => {
                     ][index % 6]}
                   />
                 ))}
-              </pie>
-              <tooltip />
-              <legend />
+              </Pie>
+              <Tooltip />
+              <Legend />
             </PieChart>
           </CardContent>
         </Card>
