@@ -141,6 +141,18 @@ const Inventory: React.FC = () => {
                   <Input id="category" placeholder="Category" className="col-span-3" />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="batchNo" className="text-right text-sm font-medium">
+                    Batch No.
+                  </label>
+                  <Input id="batchNo" placeholder="Batch number" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <label htmlFor="serialNo" className="text-right text-sm font-medium">
+                    Serial No.
+                  </label>
+                  <Input id="serialNo" placeholder="Serial number" className="col-span-3" />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
                   <label htmlFor="stock" className="text-right text-sm font-medium">
                     Stock
                   </label>
@@ -210,6 +222,8 @@ const Inventory: React.FC = () => {
                     </DropdownMenu>
                   </th>
                   <th className="pharma-th">Category</th>
+                  <th className="pharma-th">Batch No.</th>
+                  <th className="pharma-th">Serial No.</th>
                   <th className="pharma-th">
                     <DropdownMenu>
                       <DropdownMenuTrigger className="flex items-center gap-1 hover:text-pharma-primary">
@@ -243,6 +257,8 @@ const Inventory: React.FC = () => {
                   <tr key={product.id} className="hover:bg-muted/30">
                     <td className="pharma-td font-medium">{product.name}</td>
                     <td className="pharma-td">{product.category}</td>
+                    <td className="pharma-td">{product.batchNo}</td>
+                    <td className="pharma-td">{product.id}</td>
                     <td className="pharma-td">
                       {product.stock}
                       {product.stock <= product.reorderLevel && (
@@ -261,7 +277,6 @@ const Inventory: React.FC = () => {
           </div>
         </CardContent>
       </Card>
-
     </Layout>
   );
 };
