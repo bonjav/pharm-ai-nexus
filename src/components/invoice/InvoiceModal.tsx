@@ -17,9 +17,9 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, invoiceDat
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
+    content: () => invoiceRef.current,
     documentTitle: `Invoice-${invoiceData?.invoiceNumber || 'Template'}`,
     onPrintError: (error) => console.error('Print failed:', error),
-    printable: invoiceRef.current,
   });
   
   if (!invoiceData) return null;
