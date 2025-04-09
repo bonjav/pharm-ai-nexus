@@ -1,10 +1,16 @@
+
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from "@/lib/utils";
-import { Calendar, Package, FileText, BarChart3, Settings, Search, Database, Users } from "lucide-react";
+import { Calendar, Package, FileText, BarChart3, Settings, Search, Database, Users, LogOut, CreditCard } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 const Sidebar: React.FC = () => {
+  const { signOut, user } = useAuth();
+  const navigate = useNavigate();
+  
   const navItems = [
     { name: 'Dashboard', path: '/', icon: <BarChart3 className="w-5 h-5" /> },
     { name: 'Inventory', path: '/inventory', icon: <Package className="w-5 h-5" /> },
@@ -12,8 +18,13 @@ const Sidebar: React.FC = () => {
     { name: 'Billing', path: '/billing', icon: <FileText className="w-5 h-5" /> },
     { name: 'Calendar', path: '/calendar', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Reports', path: '/reports', icon: <Database className="w-5 h-5" /> },
+    { name: 'Subscription', path: '/subscription', icon: <CreditCard className="w-5 h-5" /> },
     { name: 'Settings', path: '/settings', icon: <Settings className="w-5 h-5" /> },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+  };
 
   return (
     <div className="h-screen w-64 bg-white border-r flex flex-col">
@@ -59,15 +70,23 @@ const Sidebar: React.FC = () => {
       </nav>
       
       <div className="p-4 border-t">
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-pharma-primary">
-            <span className="font-bold">JD</span>
+            <span className="font-bold">{user?.email ? user.email.substring(0, 2).toUpperCase() : "JD"}</span>
           </div>
           <div>
-            <h3 className="font-medium text-sm">John Doe</h3>
+            <h3 className="font-medium text-sm">{user?.email || "John Doe"}</h3>
             <p className="text-xs text-gray-500">Pharmacy Admin</p>
           </div>
         </div>
+        <Button 
+          variant="outline" 
+          className="w-full flex items-center justify-center gap-2"
+          onClick={handleSignOut}
+        >
+          <LogOut className="w-4 h-4" />
+          Sign Out
+        </Button>
       </div>
     </div>
   );
