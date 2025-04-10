@@ -3,9 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import Inventory from "./pages/Inventory";
 import Billing from "./pages/Billing";
@@ -14,8 +12,6 @@ import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Customers from "./pages/Customers";
-import Auth from "./pages/Auth";
-import Subscription from "./pages/Subscription";
 
 const queryClient = new QueryClient();
 
@@ -25,25 +21,17 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Protected Routes */}
-            <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-            <Route path="/billing" element={<ProtectedRoute><Billing /></ProtectedRoute>} />
-            <Route path="/calendar" element={<ProtectedRoute><Calendar /></ProtectedRoute>} />
-            <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/subscription" element={<ProtectedRoute><Subscription /></ProtectedRoute>} />
-            
-            {/* Catch-all Route */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
+        <Routes>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/inventory" element={<Inventory />} />
+          <Route path="/customers" element={<Customers />} />
+          <Route path="/billing" element={<Billing />} />
+          <Route path="/calendar" element={<Calendar />} />
+          <Route path="/reports" element={<Reports />} />
+          <Route path="/settings" element={<Settings />} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

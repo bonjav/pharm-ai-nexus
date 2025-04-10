@@ -17,18 +17,11 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, invoiceDat
   const invoiceRef = useRef<HTMLDivElement>(null);
 
   const handlePrint = useReactToPrint({
+    content: () => invoiceRef.current,
     documentTitle: `Invoice-${invoiceData?.invoiceNumber || 'Template'}`,
-    onAfterPrint: () => console.log('Printed successfully'),
-    onPrintError: (error) => console.error('Print failed:', error),
   });
   
   if (!invoiceData) return null;
-
-  const triggerPrint = () => {
-    if (invoiceRef.current) {
-      handlePrint();
-    }
-  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -39,7 +32,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, invoiceDat
             <Button 
               variant="outline" 
               size="sm"
-              onClick={triggerPrint}
+              onClick={handlePrint}
               className="flex items-center gap-1"
             >
               <Printer className="h-4 w-4" />
@@ -48,7 +41,7 @@ const InvoiceModal: React.FC<InvoiceModalProps> = ({ isOpen, onClose, invoiceDat
             <Button 
               variant="default" 
               size="sm"
-              onClick={triggerPrint}
+              onClick={handlePrint}
               className="bg-pharma-primary hover:bg-pharma-primary/90 flex items-center gap-1"
             >
               <Download className="h-4 w-4" />
