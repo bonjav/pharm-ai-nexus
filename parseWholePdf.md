@@ -1,12 +1,88 @@
 
 
+This is a very common structure in financial reports and invoices. It is often called a "Partial Grid."
 
-Get Outlook for iOS
-From: Aneesh Kulkarni <aneesh.kulkarni92@gmail.com>
-Sent: Friday, December 5, 2025 12:34:25 AM
-To: aneesh.kulkarni@hotmail.com <aneesh.kulkarni@hotmail.com>
-Subject: Read large structured pdfs in scala fast
- 
+The Lattice algorithm will fail (it needs closed boxes) and the Stream algorithm is risky (it might misinterpret multi-line text as a new row).
+
+The fastest and most robust strategy here is a Hybrid "Row-Slicing" Approach:
+
+Use the lines to determine the Y-coordinates (Row heights).
+Slice the page into horizontal strips based on those lines.
+Apply Stream extraction only inside those strips to separate the columns.
+This solves the biggest problem with borderless tables: Multi-line text. If a cell contains two lines of text, the horizontal line tells us they belong to the same row, stopping the parser from splitting them into two data entries.
+
+The Scala Implementation
+Here is how to implement "Row Slicing" using Tabula-Java's low-level API.
+
+import technology.tabula.{ObjectExtractor, Page, Rectangle}
+import technology.tabula.extractors.BasicExtractionAlgorithm
+import org.apache.pdfbox.pdmodel.PDDocument
+import scala.jdk.CollectionConverters._
+
+object PartialGridExtractor {
+
+  def extractHorizontalLineTable(doc: PDDocument, pageNum: Int): List[List[String]] = {
+    val extractor = new ObjectExtractor(doc)
+    val page = extractor.extract(pageNum) // 1-based index
+
+    // 1. Get all horizontal lines (rulings)
+    // We filter for lines that are wider than they are tall (horizontal)
+    val horizontalRulings = page.getRulings.asScala
+      .filter(r => r.getWidth > r.getHeight)
+      .sortBy(_.getY) // Sort top to bottom
+
+    // 2. Define the "Strips" (Rows)
+    // We take the space between two consecutive lines as a "Row Area"
+    val rowAreas = horizontalRulings.sliding(2).collect {
+      case Seq(topLine, bottomLine) =>
+        // Define the rectangle area between these two lines
+        // Arguments: top, left, bottom, right
+        page.getArea(
+          topLine.getY.toFloat,
+          0f, // Start at left edge (or set specific margin)
+          bottomLine.getY.toFloat, 
+          page.getWidth // End at right edge
+        )
+    }.toList
+
+    // 3. Extract text from each strip
+    val basicAlgo = new BasicExtractionAlgorithm() // Use whitespace for columns
+
+    rowAreas.flatMap { rowArea =>
+      // Extract the table found in this specific strip
+      val tables = basicAlgo.extract(rowArea)
+      
+      tables.asScala.flatMap { table =>
+        table.getRows.asScala.map { row =>
+          row.asScala.map(_.getText).toList
+        }
+      }
+    }
+  }
+}
+Why this is faster and safer
+Concurrency Friendly: Because this calculates coordinates mathmatically, it is extremely CPU efficient compared to recursive parsing. It fits perfectly inside the fs2.parEvalMap pipeline from my first response.
+Row Integrity: Pure "Stream" algorithms often fail when one cell has 3 lines of text and the neighbor has 1 line. This approach uses the hard horizontal lines to force them into the same data object.
+Edge Case: "Invisible" Lines
+Sometimes, what looks like a line to the human eye is actually a very thin rectangle or an underline of the text above it.
+
+If page.getRulings returns nothing, you need to broaden the search to Text Strips.
+
+If the code above yields empty results, swap Step 1 with this logic:
+
+// Alternative Step 1: Infer lines from text Y-positions
+// Group text chunks by their Y coordinate (rounded to nearest integer)
+val distinctYPositions = page.getText.asScala
+  .map(_.getBottom) // Use the bottom of the text
+  .map(y => Math.round(y)) // Round to handle slight alignment jitters
+  .distinct
+  .sorted
+  
+// Now use these Y integers to slice the page similar to the code above
+Next Step: Would you like to know how to handle headers in this scenario? Since headers usually don't have lines above/below them in the same way the body data does, they often get skipped by the "sliding window" logic.
+
+
+
 Reading large structured PDFs fast in Scala requires a combination of efficient memory management (to avoid OutOfMemoryError) and parallelism (to maximize CPU usage).
 
 The most effective approach is to combine Apache PDFBox (for parsing) with FS2 or Akka Streams (for concurrency). While purely functional libraries like fs2-pdf exist, PDFBox remains the most robust for "structured" content (forms, metadata) and offers critical memory optimization settings.
