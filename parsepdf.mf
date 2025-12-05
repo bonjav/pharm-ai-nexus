@@ -1,25 +1,94 @@
-SpreadsheetExtractionAlgorithm
 
-def extractTable(doc: PDDocument, pageIndex: Int): IO[List[List[String]]] = IO.blocking {
-  val extractor = new ObjectExtractor(doc)
-  val page = extractor.extract(pageIndex + 1) // Tabula is 1-indexed
-  
-  // Basic spreadsheet algorithm detection
-  val bea = new SpreadsheetExtractionAlgorithm()
-  val tables = bea.extract(page)
-  
-  tables.asScala.flatMap { table =>
-    table.getRows.asScala.map { row =>
-      row.asScala.map(_.getText).toList
-    }
-  }.toList
+Handling headers in "Partial Grid" PDFs (horizontal lines only) is tricky because headers float. They sit above the first line, often in the same open space as the company logo or address, making it hard to programmatically say "This is the table header" versus "This is the document title."
+To capture the header fast and accurately, we use the "Look-Up" Strategy.
+The "Look-Up" Strategy
+Since you have a solid anchor (the first horizontal line), you simply look "up" from that line by a fixed amount (or until you hit text) to capture the header row.
+Here is the updated logic. It splits the extraction into two phases: Header Zone (Area above Line 1) and Body Zone (Area between lines).
+Scala Implementation
+import technology.tabula.{ObjectExtractor, Page}
+
+import technology.tabula.extractors.BasicExtractionAlgorithm
+import org.apache.pdfbox.pdmodel.PDDocument
+import scala.jdk.CollectionConverters._
+
+object FullTableExtractor {
+
+// Configuration: How tall do you expect the header to be?
+// 30-50 points is standard for single-line headers.
+// Increase this if your headers span multiple lines.
+val ESTIMATED_HEADER_HEIGHT = 40f
+
+def extractWithHeader(doc: PDDocument, pageNum: Int): List[List[String]] = {
+
+val extractor = new ObjectExtractor(doc)
+val page = extractor.extract(pageNum)
+val basicAlgo = new BasicExtractionAlgorithm()
+
+// 1. Find the Anchor (The first horizontal line)
+
+val horizontalRulings = page.getRulings.asScala
+.filter(r => r.getWidth > r.getHeight)
+.sortBy(_.getY)
+.toList
+
+if (horizontalRulings.isEmpty) return List.empty
+
+val firstLine = horizontalRulings.head
+
+// --- PHASE A: Extract Header ---
+// We define an area starting slightly above the first line
+// Top = LineY - Height, Left = 0, Bottom = LineY, Right = PageWidth
+val headerArea = page.getArea(
+firstLine.getY.toFloat - ESTIMATED_HEADER_HEIGHT,
+0f,
+firstLine.getY.toFloat,
+page.getWidth
+)
+
+val headerRows = basicAlgo.extract(headerArea).asScala.flatMap { table =>
+table.getRows.asScala.map(_.asScala.map(_.getText).toList)
+}.toList
+
+// --- PHASE B: Extract Body (The Row Slicing Logic) ---
+val bodyRows = horizontalRulings.sliding(2).flatMap {
+case Seq(topLine, bottomLine) =>
+val rowArea = page.getArea(
+topLine.getY.toFloat,
+0f,
+bottomLine.getY.toFloat,
+page.getWidth
+)
+basicAlgo.extract(rowArea).asScala.flatMap { table =>
+table.getRows.asScala.map(_.asScala.map(_.getText).toList)
 }
-4. Summary of "Fast" Optimizations
-Optimization	Method	Impact
-Low RAM	MemoryUsageSetting.setupTempFileOnly()	Enables reading 1GB+ files on 512MB heap.
-Parallelism	fs2.parEvalMap	Uses all CPU cores. Parsing is CPU heavy.
-Parsing	AcroForm vs TextStripper	Reading Form Fields is O(1) (instant). Stripping text is O(N) (slower).
-Lazy IO	Stream.range	Only loads the pages requested, allowing you to stop early.
-Next Step
-Would you like a specific snippet for extracting tabular data specifically using the Tabula integration, or are you primarily focused on form fields/metadata?
+}.toList
 
+// Combine them
+headerRows ++ bodyRows
+}
+}
+
+3 Optimization Techniques for Headers
+Since headers are unstructured, you might catch "junk" (like a signature or a logo text) if the table is in the middle of the page. Here is how to filter that out:
+1. The "Keyword Anchor" (Safest)
+Instead of guessing the height, search the page for a specific column name (e.g., "Unit Price") to find the exact Y-coordinate of the header.
+val textElements = page.getText.asScala
+val headerAnchor = textElements.find(_.getText.trim.equalsIgnoreCase("Unit Price"))
+
+val headerTopY = headerAnchor.map(_.getTop).getOrElse(firstLine.getY - 40f)
+// Now extract from headerTopY down to firstLine.getY
+
+2. The "X-Overlap" Check
+When you merge the Header rows with the Body rows, check if the text aligns.
+* If the "Header" text is at X=500 but your Body data usually stops at X=400, that text is likely a logo or sidebar note, not a column header. Use the x coordinates of your Body columns to validate your Header candidates.
+3. Dynamic Height Calculation
+If you don't know the header height, use the ESTIMATED_HEADER_HEIGHT but iterate backwards.
+* Grab text immediately above the line.
+* If the text is bold or matches a standard font size, keep going up.
+* If the font size jumps (e.g., becomes huge Title text) or the Y-gap is large, stop. That is the document title, not the table header.
+Next Step
+This handles the rows perfectly. However, columns are still being guessed by whitespace.
+If your PDF has columns that are very close together (e.g., a "Quantity" column 10 right next to a "Price" column $500), the BasicExtractionAlgorithm might merge them into 10$500.
+Would you like the snippet to force-split columns based on the X-coordinates of the header text? (i.e., If "Price" starts at X=300, force a split at X=300 for all rows below).
+
+Show quoted text
