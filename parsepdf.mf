@@ -1,0 +1,25 @@
+SpreadsheetExtractionAlgorithm
+
+def extractTable(doc: PDDocument, pageIndex: Int): IO[List[List[String]]] = IO.blocking {
+  val extractor = new ObjectExtractor(doc)
+  val page = extractor.extract(pageIndex + 1) // Tabula is 1-indexed
+  
+  // Basic spreadsheet algorithm detection
+  val bea = new SpreadsheetExtractionAlgorithm()
+  val tables = bea.extract(page)
+  
+  tables.asScala.flatMap { table =>
+    table.getRows.asScala.map { row =>
+      row.asScala.map(_.getText).toList
+    }
+  }.toList
+}
+4. Summary of "Fast" Optimizations
+Optimization	Method	Impact
+Low RAM	MemoryUsageSetting.setupTempFileOnly()	Enables reading 1GB+ files on 512MB heap.
+Parallelism	fs2.parEvalMap	Uses all CPU cores. Parsing is CPU heavy.
+Parsing	AcroForm vs TextStripper	Reading Form Fields is O(1) (instant). Stripping text is O(N) (slower).
+Lazy IO	Stream.range	Only loads the pages requested, allowing you to stop early.
+Next Step
+Would you like a specific snippet for extracting tabular data specifically using the Tabula integration, or are you primarily focused on form fields/metadata?
+
