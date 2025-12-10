@@ -1,3 +1,36 @@
+import net.liftweb.json._
+import scala.jdk.CollectionConverters._
+
+implicit val formats: Formats = DefaultFormats
+
+def toJValue(v: Any): JValue = v match {
+  case null        => JNull
+  case s: String   => JString(s)
+  case i: Int      => JInt(i)
+  case l: Long     => JInt(l)
+  case d: Double   => JDouble(d)
+  case b: Boolean  => JBool(b)
+
+  case m: Map[_, _] =>
+    JObject(m.map { case (k, v) =>
+      JField(k.toString, toJValue(v))
+    }.toList)
+
+  case it: Iterable[_] =>
+    JArray(it.map(toJValue).toList)
+
+  case jo: SafeJsonObject =>
+    toJValue(jo.toMap)
+
+  case ja: org.json.JSONArray =>
+    toJValue(ja.toList.asInstanceOf[java.util.List[Any]].asScala.toList)
+
+  case jv: JValue =>
+    jv
+
+  case other =>
+    Extraction.decompose(other)
+}
 
 Handling headers in "Partial Grid" PDFs (horizontal lines only) is tricky because headers float. They sit above the first line, often in the same open space as the company logo or address, making it hard to programmatically say "This is the table header" versus "This is the document title."
 To capture the header fast and accurately, we use the "Look-Up" Strategy.
